@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://apis.google.com/js/api.js"></script>
+  </head>
+  <body>
+    <div>Select files from your Google Drive:</div>
+    <button onclick="openPicker()">Select Files</button>
+    <div id="selected-files"></div>
+    <script>
+      var developerKey = '';
+      var clientId = '';
+      var appId = '';
+      var scope = ['https://www.googleapis.com/auth/drive.file'];
+
+      function onApiLoad() {
+        gapi.load('auth', {'callback': onAuthApiLoad});
+        gapi.load('picker', {'callback': onPickerApiLoad});
+      }
+
+      function onAuthApiLoad() {
+        window.gapi.auth.authorize(
+          {
+            'client_id': clientId,
+            'scope': scope,
+            'immediate': false
+          },
+          handleAuthResult);
+      }
+
+      function onPickerApiLoad() {
+        document.getElementById('picker-button').disabled = false;
+      }
+
+      function handleAuthResult(authResult) {
+        if (authResult && !authResult.error) {
+          createPicker();
+        }
+      }
+
+      function openPicker() {
+        gapi.load('auth', {'callback': onAuthApiLoad});
+      }
+
+      function createPicker() {
+        var picker = new google.picker.PickerBuilder()
+            .setAppId(appId)
+            .setDeveloperKey(developerKey)
+            .setOAuthToken(gapi.auth.getToken().access_token)
+            .addView(google.picker.ViewId.DOCS)
+            .setCallback(pickerCallback)
+            .build();
+        picker.setVisible(true);
+      }
+
+      function pickerCallback(data) {
+        if (data.action == google.picker.Action.PICKED) {
+          var fileIds = [];
+          var files = data.docs;
+          for (var i = 0; i < files.length; i++) {
+            fileIds.push(files[i].id);
+          }
+          google.script.run
+            .withSuccessHandler(function(url) {
+              document.getElementById('selected-files').innerHTML = 'Sheet created: <a href="' + url + '">' + url + '</a>';
+            })
+            .createSheetWithFileIds(fileIds);
+        }
+      }
+    </script>
+    <script async defer src="https://apis.google.com/js/api.js?onload=onApiLoad"></script>
+  </body>
+</html>
+
+
+
